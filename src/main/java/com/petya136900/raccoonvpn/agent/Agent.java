@@ -54,17 +54,17 @@ public class Agent {
 	private String host;
 	private Integer port;
 	private String login;
-	private String password;
+	private HashedPassword hash;
 	private boolean useTls;
 	private boolean autoReconnect;
 	private AgentFrame agentFrame;
 	private boolean bye = false;
 	
-	public void connect(String host, Integer port, String login, String password, boolean autoReconnect, boolean debug, boolean useTls, AgentFrame agentFrame) {
+	public void connect(String host, Integer port, String login, HashedPassword hash, boolean autoReconnect, boolean debug, boolean useTls, AgentFrame agentFrame) {
 		info("Host: "+host);
 		info("Port: "+port);
 		info("Login: "+login);
-		info("Password: "+password.replaceAll(".{1}", "*"));
+		info("Hash: "+hash.getHash().replaceAll(".{1}", "*"));
 		info("Use TLS: "+useTls);
 		info("Auto Reconnect: "+autoReconnect);
 		info("Debug: "+debug);
@@ -75,7 +75,7 @@ public class Agent {
 		this.useTls=useTls;
 		this.autoReconnect=autoReconnect;
 		this.login=login;
-		this.password=password;
+		this.hash=hash;
 		this.agentFrame=agentFrame;
 		rProtocol=new RProtocol().setDebug(this.debug);
 		if(this.agentFrame!=null)
@@ -92,7 +92,7 @@ public class Agent {
 				if(agentFrame!=null) {
 					setSocketToServer(socketToServer);
 					try {
-						Tools.createFile("save", new Save(host,port,login,password,autoReconnect,debug,useTls).toJson());
+						Tools.createFile("save", new Save(host,port,login,hash.getHash(),autoReconnect,debug,useTls).toJson());
 					} catch (IOException e) {}
 				}
 				if(this.useTls) {
@@ -427,8 +427,9 @@ public class Agent {
 	}
 
 	private boolean login() throws ServerUnavailableException, UserNotFoundException, WrongPassException, UnknownHostException {
+		System.out.println("Login: "+login+" | passwordHash: "+hash.getHash());
 		try {
-			Data rData = rProtocol.send(socketToServer,Data.code(Codes.RACCOON_LOGIN).setLogin(login).setPasswordHash(Tools.hashSHA256(password)));
+			Data rData = rProtocol.send(socketToServer,Data.code(Codes.RACCOON_LOGIN).setLogin(login).setPasswordHash(hash.getHash()));
 			if(rData.codeEqual(Codes.RACCOON_SUCCESS_LOGIN)) {
 				token = rData.getToken();
 				userId = rData.getUserId();

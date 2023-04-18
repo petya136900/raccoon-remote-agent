@@ -6,6 +6,7 @@ import java.util.stream.Stream;
 import com.petya136900.raccoonvpn.agent.Action;
 import com.petya136900.raccoonvpn.agent.Agent;
 import com.petya136900.raccoonvpn.agent.AgentFrame;
+import com.petya136900.raccoonvpn.agent.HashedPassword;
 import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.AnsiConsole;
 
@@ -45,7 +46,7 @@ public class AgentLauncher {
 		Boolean autoReconnect = readArg(new String[] {"--autoreconnect","-ar"}, false, true, false);
 		Boolean debug = readArg(new String[] {"--debug","-d"}, false, true, false);
 		String useTls = readArg(new String[] {"--use-tls","--tls","-tls"}, true, null, "true");
-		new Agent().connect(host,Integer.parseInt(port),login,password,autoReconnect,debug,Boolean.valueOf(useTls),null);
+		new Agent().connect(host,Integer.parseInt(port),login, HashedPassword.password(password),autoReconnect,debug,Boolean.valueOf(useTls),null);
 	}
 	private static <T> T readArg(String[] names, boolean needValue, T ifFound, T ifNot) {
 		return readArg(names, needValue, ifFound, ifNot, null);

@@ -1,5 +1,9 @@
 package com.petya136900.raccoonvpn.agent;
+import com.petya136900.racoonvpn.tools.JsonParser;
+
 import java.awt.Dimension;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 
 import javax.swing.JLabel;
 
@@ -9,7 +13,7 @@ import javax.swing.JLabel;
  */
 public class LoginPanel extends javax.swing.JPanel {
 	private AgentFrame agentFrame;
-	
+	private boolean saveLoaded = false;
 	private Action action = getDefaultAction();
 	
 	private Thread agentThread;
@@ -42,11 +46,7 @@ public class LoginPanel extends javax.swing.JPanel {
         jTextFieldLogin.setText("admin");
         jTextFieldLogin.setToolTipText("Логин");
         jTextFieldLogin.setBorder(javax.swing.BorderFactory.createEtchedBorder());
-        jTextFieldLogin.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jTextFieldLoginActionPerformed(evt);
-            }
-        });
+        jTextFieldLogin.addActionListener(evt -> jTextFieldLoginActionPerformed(evt));
 
         jPanelLogo.setBackground(new java.awt.Color(255, 255, 255));
 
@@ -91,36 +91,25 @@ public class LoginPanel extends javax.swing.JPanel {
         jTextFieldServerHostPort.setText("vpn.furr.cf:8444");
         jTextFieldServerHostPort.setToolTipText("Сервер");
         jTextFieldServerHostPort.setBorder(javax.swing.BorderFactory.createEtchedBorder());
-        jTextFieldServerHostPort.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jTextFieldServerHostPortActionPerformed(evt);
-            }
-        });
+        jTextFieldServerHostPort.addActionListener(evt -> jTextFieldServerHostPortActionPerformed(evt));
 
         jPasswordField.setToolTipText("");
-        jPasswordField.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jPasswordFieldActionPerformed(evt);
-            }
-        });
+        jPasswordField.addActionListener((evt) -> {});
+        jPasswordField.addKeyListener(CustomKeyListener.create(e->{
+            saveLoaded = false;
+        }));
 
         jButtonLogin.setBackground(new java.awt.Color(102, 153, 255));
         jButtonLogin.setFont(new java.awt.Font("Roboto Light", 0, 24)); // NOI18N
         jButtonLogin.setForeground(new java.awt.Color(255, 255, 255));
         jButtonLogin.setText("Вход");
         jButtonLogin.setToolTipText("");
-        jButtonLogin.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButtonLoginActionPerformed(evt);
-            }
+        jButtonLogin.addActionListener((evt) -> {
+            jButtonLoginActionPerformed(evt);
         });
 
         jCheckBoxAutoreconnect.setText("Авто-переподключение");
-        jCheckBoxAutoreconnect.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jCheckBoxAutoreconnectActionPerformed(evt);
-            }
-        });
+        jCheckBoxAutoreconnect.addActionListener(evt -> jCheckBoxAutoreconnectActionPerformed(evt));
 
         lastMessage.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
         lastMessage.setText("");
@@ -197,7 +186,7 @@ public class LoginPanel extends javax.swing.JPanel {
     private void jTextFieldLoginActionPerformed(java.awt.event.ActionEvent evt) {                                                
         // TODO add your handling code here:
     }                                               
-    private void jTextFieldServerHostPortActionPerformed(java.awt.event.ActionEvent evt) {                                                         
+    private void jTextFieldServerHostPortActionPerformed(java.awt.event.ActionEvent evt) {
         // TODO add your handling code here:
     }                                                        
     private void jPasswordFieldActionPerformed(java.awt.event.ActionEvent evt) {                                               
@@ -235,14 +224,18 @@ public class LoginPanel extends javax.swing.JPanel {
         	Boolean autoReconnect = jCheckBoxAutoreconnect.isSelected();
         	String login = jTextFieldLogin.getText();
         	String password = String.valueOf(jPasswordField.getPassword());
-    		prConnect(host,portFinal,login,password,autoReconnect,false,true,agentFrame);
+    		prConnect(host,portFinal,login,
+                    saveLoaded?
+                            HashedPassword.hash(password):
+                            HashedPassword.password(password),
+                autoReconnect,false,true,agentFrame);
     	};
     }
 	
-	public void prConnect(String host, Integer portFinal, String login, String password, Boolean autoReconnect, Boolean debug, Boolean useTls, AgentFrame agentFrame) {
+	public void prConnect(String host, Integer portFinal, String login, HashedPassword hash, Boolean autoReconnect, Boolean debug, Boolean useTls, AgentFrame agentFrame) {
 		agentFrame.blockButtonLogin();
     	agentThread = new Thread(()->{
-    		new Agent().connect(host,portFinal,login,password,autoReconnect,false,true,agentFrame);
+    		new Agent().connect(host,portFinal,login,hash,autoReconnect,debug,useTls,agentFrame);
     	});
     	agentThread.start();
 	}
@@ -281,8 +274,9 @@ public class LoginPanel extends javax.swing.JPanel {
 		jTextFieldServerHostPort.setText(save.getHost()+":"+save.getPort());
 		jPasswordField.setText(save.getPassword());
 		jCheckBoxAutoreconnect.setSelected(save.isAutoReconnect());
+        saveLoaded = true;
 		if(save.isAutoReconnect()) {
-			prConnect(save.getHost(),save.getPort(),save.getLogin(),save.getPassword(),true,false,true,agentFrame);
+			prConnect(save.getHost(),save.getPort(),save.getLogin(),HashedPassword.hash(save.getPassword()),save.isAutoReconnect(),save.isDebug(),save.isUseTls(),agentFrame);
 		}
 	}              
 }
